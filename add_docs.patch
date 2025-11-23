@@ -1,0 +1,27 @@
+
+diff --git a/docs/VISION.md b/docs/VISION.md
+new file mode 100644
+--- /dev/null
++++ b/docs/VISION.md
+@@
+# Wardrobe Builder — Vision Document
+
+## 1. Introduction
+Wardrobe Builder is envisioned as a multi-platform fashion ecosystem... (truncated for brevity)
+
+diff --git a/docs/DEVELOPMENT_PLANS.md b/docs/DEVELOPMENT_PLANS.md
+new file mode 100644
+--- /dev/null
++++ b/docs/DEVELOPMENT_PLANS.md
+@@
+# Wardrobe Builder — Development Plans
+(Full one-person and two-person development plans as created previously.)
+
+diff --git a/docs/VISION_NEEDS.md b/docs/VISION_NEEDS.md
+new file mode 100644
+--- /dev/null
++++ b/docs/VISION_NEEDS.md
+@@
+# Vision Needs
+This document outlines the required capabilities, infrastructure, and feature pillars needed to fulfill the long-term vision of Wardrobe Builder.
+
