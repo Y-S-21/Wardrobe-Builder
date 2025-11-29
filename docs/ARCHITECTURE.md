@@ -1,109 +1,244 @@
-# 🏗️ Technical Architecture – Wardrobe Builder
+# Wardrobe Builder — System Architecture
 
-This document describes the technical design for the app.
+This document defines the **high-level architecture**, platform structure, technology choices, and communication flows for the MVP and long-term product.
 
 ---
 
-# 🛠 Tech Stack Overview
+# 🧱 1. Architecture Goals
 
-## Frontend (Desktop App)
-- Tauri (Rust + JS bridge)
-- React + Vite
-- TailwindCSS
-- Zustand (state management)
-- TypeScript
+- Build a **desktop-first** product with fast UX and local storage.
+- Keep backend flexible so it can evolve from local → hybrid → full cloud.
+- Provide a clean separation between **frontend (React)** and **backend (FastAPI)**.
+- Support long-term expansion (web, mobile, AR, VR) without rewriting core logic.
+
+---
+
+# 🏗 2. High-Level Architecture Diagram
+
+```
+     ┌───────────────────────────────┐
+     │        Desktop Client         │  (Tauri + React + Zustand)
+     │  - UI Rendering               │
+     │  - State Management           │
+     │  - Outfit Builder Canvas      │
+     │  - Local-First Storage        │
+     └───────────────────────────────┘
+                    │
+                    │ Tauri IPC (Local)
+                    ▼
+     ┌───────────────────────────────┐
+     │           Backend              │  (FastAPI)
+     │  - Upload API                 │
+     │  - Background Removal Engine  │
+     │  - Image Processing           │
+     │  - AI Suggestion Engine       │
+     │  - Weather Integration        │
+     └───────────────────────────────┘
+                    │
+                    │ File I/O / Local FS
+                    ▼
+     ┌───────────────────────────────┐
+     │        Local Storage          │
+     │  - JSON DB / SQLite (MVP)    │
+     │  - Wardrobe Items            │
+     │  - Outfits                   │
+     └───────────────────────────────┘
+```
+
+Later phases add:
+
+- Cloud DB  
+- Web API  
+- Mobile app  
+- AR/VR engines  
+
+---
+
+# ⚙️ 3. Technology Stack
+
+## Frontend (Desktop)
+| Component | Tech |
+|----------|------|
+| Shell | Tauri |
+| UI | React + TypeScript |
+| Styling | TailwindCSS |
+| State | Zustand |
+| Routing | React Router |
+| Image Canvas | Custom HTML5 + Fabric.js (future possibility) |
+
+---
 
 ## Backend
-- FastAPI (Python)
-- Local storage first
-- Optional cloud DB (Phase 2+)
-
-## AI / Image Processing
-- Background removal (ONNX, ML model, or external API)
-- Image preprocessing pipeline
-- Simple rule-based AI for outfit generation
-- Later: more advanced ML
+| Feature | Tech |
+|---------|------|
+| API Framework | FastAPI |
+| Image Processing | Python (Pillow, OpenCV, rembg) |
+| AI | OpenAI or LLM via API |
+| Weather API | OpenWeather or Tomorrow.io |
+| Storage | SQLite (local), S3 in future |
 
 ---
 
-# 📁 Folder Structure (Planned)
+## File Storage
+| Stage | Storage |
+|-------|---------|
+| MVP | Local filesystem (`/Wardrobe/AppData`) |
+| Future | Supabase or AWS S3 |
 
+---
+
+# 📁 4. Folder Structure (Proposed)
+
+## Frontend (Tauri + React)
 ```
-Wardrobe-Builder/
-│
-├── app/                     # Tauri + React
-│   ├── src/
-│   ├── public/
-│   └── tauri.conf.json
-│
-├── backend/                 # FastAPI backend
-│   ├── app/
-│   ├── main.py
-│   └── requirements.txt
-│
-├── docs/                    # Documentation
-│
-└── README.md
+/src
+  /pages
+  /components
+  /state (Zustand)
+  /utils
+  /hooks
+  /assets
+  /styles
+/tauri
+  tauri.conf.json
 ```
 
 ---
 
-# 🔄 Data Flow
-
-## Wardrobe Upload
-User → React UI → Image Preprocess → Background Removal  
-→ Save processed image locally → Add metadata (category/tags)
-
-## Manual Outfit Builder
-User selects items → React UI layers multiple images  
-→ Save outfit config (IDs and positions)
-
-## AI Outfit Generator
-Wardrobe items → AI logic → Suggest outfit → Show preview → Save if accepted
-
----
-
-# 🧠 MVP AI Logic (Simple)
-- Score tops/bottoms/shoes by:
-  - occasion tag  
-  - weather suitability  
-  - color compatibility  
-- Combine highest-scoring combinations
-
-Later phases will introduce ML models for:
-- color matching  
-- body type  
-- personal preference  
+## Backend (FastAPI)
+```
+/backend
+  /api
+    upload.py
+    outfits.py
+    suggestions.py
+  /services
+    image_processing.py
+    ai_engine.py
+    weather.py
+  /models
+    item.py
+    outfit.py
+  /db
+    database.py
+  main.py
+```
 
 ---
 
-# 🧵 Backend Workflow (Phase 2+)
-- FastAPI handles:
-  - image processing  
-  - cloud sync  
-  - AI inference (if needed)  
+# 🔌 5. Communication Flows
 
-- Database (future):
-  - SQLite → PostgreSQL (cloud)
-
----
-
-# 📦 Local Storage (Phase 1)
-Use:
-- IndexedDB  
-- filesystem access (Tauri FS API)  
-- JSON structures for metadata  
-- Zustand store for runtime state  
+## A. Upload Clothing Item
+```
+Frontend → Tauri → FastAPI (/upload)  
+FastAPI → background removal  
+FastAPI → save item to local DB  
+Frontend → refresh wardrobe grid
+```
 
 ---
 
-# 🛠 Dev Principles
-- Offline-first  
-- Modular AI pipeline  
-- Scalable folder structure  
-- Separation of concerns  
-- Easy to port to mobile later (React Native)
+## B. AI Outfit Suggestion
+```
+Frontend → /suggest  
+FastAPI → LLM with wardrobe inventory  
+FastAPI → return outfit structure  
+Frontend → render suggested outfit
+```
 
 ---
 
-# 🏁 End of Architecture Doc
+## C. Weather-Based Suggestion
+```
+Frontend → /weather-suggestion  
+Backend → Weather API call  
+Backend → LLM  
+Frontend → Display results
+```
+
+---
+
+## D. Manual Outfit Saving
+```
+Frontend → Save JSON layout → /save-outfit  
+Backend → store JSON + thumbnail in local DB  
+Frontend → display in Outfit Gallery
+```
+
+---
+
+# 🧩 6. Storage Architecture
+
+## MVP Storage
+- Clothing images → Local filesystem  
+- Metadata → SQLite or JSON  
+- Outfits → JSON + image  
+
+## Cloud (Future)
+- Move images → S3 or Supabase  
+- Move DB → Postgres  
+- Add authentication  
+
+---
+
+# 🔐 7. Security Architecture (Planned)
+- Local IPC only  
+- No exposed public APIs in MVP  
+- Sandbox within Tauri app  
+- Secrets stored in environment files  
+
+Future:
+- JWT auth  
+- OAuth for users  
+- Role-based access control (stylists, brands, users)
+
+---
+
+# 🚀 8. Scalability Architecture (Future)
+
+## Expand to:
+- Web API  
+- CDN for clothing images  
+- Microservices (AI, image processing)  
+- Job queue for heavy tasks  
+
+---
+
+# 🧭 9. Architecture Principles
+
+1. **Local-first, cloud-later**  
+2. **UI–Backend clear separation**  
+3. **Offline-friendly**  
+4. **Incrementally upgradeable**  
+5. **API-first future roadmap**  
+6. **Simple → scalable**  
+
+---
+
+# 📌 10. Versioned Architecture Strategy
+
+## MVP (Now)
+- Local image processing  
+- Local DB  
+- No accounts  
+- Desktop only  
+
+## V1.0 (Next)
+- Cloud sync  
+- User accounts  
+- Mobile app  
+
+## V2.0
+- Social networking  
+- Stylists  
+- Marketplace  
+
+## V3.0
+- AR try-on  
+- VR wardrobes  
+- Virtual shops  
+
+---
+
+# ✅ End of Architecture Document
+
